@@ -1311,9 +1311,13 @@ const reselectBtn = document.querySelector('#reselect-btn');
 function shuffle(a){ return a.sort(() => Math.random() - 0.5); }
 
 function renderMath(targets = null) {
-    if(window.MathJax) {
+    // 修正：MathJax本体がロードされ、関数が利用可能かまでチェックする
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         if (targets) MathJax.typesetPromise(targets).catch((err) => console.log(err.message));
         else MathJax.typesetPromise().catch((err) => console.log(err.message));
+    } else {
+        // まだ読み込まれていない場合はログだけ出してクラッシュを防ぐ
+        console.warn("MathJaxがまだ読み込まれていません。初回は自動レンダリングを待ちます。");
     }
 }
 
@@ -1499,10 +1503,13 @@ function setupGame() {
     renderMath([topArea, midArea, bottomArea]);
 }
 
-// 初期化実行
-initFieldSelect(); // 選択肢を生成
-setupGame();      // ゲーム開始
+// -------------------------------------------------------------
+// 初期化・イベント登録実行（並べ替え）
+// -------------------------------------------------------------
 
+initFieldSelect(); // 選択肢を生成
+
+// 先にすべてのボタンやプルダウンにイベントを登録しておく（安全対策）
 fieldSelect.addEventListener('change', () => { setupGame(); });
 resetBtn.onclick = () => { setupGame(); };
 retryBtn.onclick = () => { setupGame(); };
@@ -1511,8 +1518,12 @@ reselectBtn.onclick = () => {
     document.body.style.overflow = '';
     fieldSelect.focus();
 };
+
 const radios = document.getElementsByName('pairCount');
 for (let r of radios) r.onchange = () => setupGame();
+
+// 最後にゲームを開始する
+setupGame();
 
 })();
 </script>
